@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ساعه </title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #digitalClock {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 28px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="digitalClock"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        let renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        document.body.appendChild(renderer.domElement);
+
+        
+        const clockFace = new THREE.Mesh(
+            new THREE.CylinderGeometry(5, 5, 0.3, 64),
+            new THREE.MeshPhongMaterial({
+                color: 0x222222,
+                transparent: true,
+                opacity: 0.7,
+                shininess: 150,
+                specular: 0xffffff
+            })
+        );
+        scene.add(clockFace);
+
+        
+        function createHand(length, width, color) {
+            const geometry = new THREE.BoxGeometry(width, length, width);
+            const material = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.3 });
+            const hand = new THREE.Mesh(geometry, material);
+            hand.position.y = length / 2 - 0.5;
+            return hand;
+        }
+
+        const hourHand = createHand(2.5, 0.15, 0x00ffff);
+        const minuteHand = createHand(3.5, 0.1, 0x00ff00);
+        const secondHand = createHand(4, 0.05, 0xff00ff);
+
+        scene.add(hourHand);
+        scene.add(minuteHand);
+        scene.add(secondHand);
+
+        
+        const ambientLight = new THREE.AmbientLight(0x222222);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0x00ffff, 0.5, 5);
+        pointLight.position.set(0, 0, 3);
+        scene.add(pointLight);
+
+        camera.position.z = 12;
+
+        
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours() % 12;
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+            hourHand.rotation.z = -((2 * Math.PI) / 12) * hours - ((2 * Math.PI) / 12) * (minutes / 60);
+            minuteHand.rotation.z = -((2 * Math.PI) / 60) * minutes - ((2 * Math.PI) / 60) * (seconds / 60);
+            secondHand.rotation.z = -((2 * Math.PI) / 60) * seconds;
+            const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            const digitalHours = hours === 0 ? 12 : hours;
+            document.getElementById('digitalClock').innerText = 
+                `${digitalHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${Math.floor(seconds).toString().padStart(2, '0')} ${ampm}`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateClock();
+            renderer.render(scene, camera);
+        }
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
